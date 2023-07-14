@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:zola/services/otp.dart' as otp_service;
+import 'package:zola/widgets/password_textfield.dart';
 
 class PasswordBottomSheet {
   static void showResetPasswordBottomSheet(BuildContext context) {
@@ -27,6 +29,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   late String otp;
   late String newPassword;
   late String retypeNewPassword;
+  String accessToken = "";
+  bool isPasswordVisible = false;
 
   void buildPage(BuildContext context) {
     setState(() {
@@ -97,11 +101,22 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
                     child: const Text('Reset mật khẩu'),
-                    onPressed: () {
+                    onPressed: () async {
                       // Handle resetting password here
-                      setState(() {
-                        currentPage = 1;
-                      });
+                      try {
+                        await otp_service.requestOtpResetPassword(email);
+                        setState(() {
+                          currentPage = 1;
+                        });
+                      } catch (e) {
+                        print(e);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text('Có lỗi xảy ra, vui lòng thử lại sau!'),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
@@ -160,11 +175,23 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
                     child: const Text('Tiếp tục'),
-                    onPressed: () {
+                    onPressed: () async {
                       // Handle resetting password here
-                      setState(() {
-                        currentPage = 2;
-                      });
+                      try {
+                        String token = await otp_service.verifyOtp(email, otp);
+                        setState(() {
+                          accessToken = token;
+                          currentPage = 2;
+                        });
+                      } catch (e) {
+                        print(e);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text('Có lỗi xảy ra, vui lòng thử lại sau!'),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
@@ -203,47 +230,60 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 const SizedBox(height: 16.0),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    //  check here: https://stackoverflow.com/questions/53869078/how-to-move-bottomsheet-along-with-keyboard-which-has-textfieldautofocused-is-t
+                  child: PasswordTextField(
+                    key: const Key("NEW_PASSWORD_RESET_PASSWORD"),
+                    hintText: 'Mật khẩu mới',
+                    labelText: 'Mật khẩu mới',
                     onChanged: (value) => setState(() {
                       newPassword = value;
                     }),
-                    key: const Key("PASSWORD_RESET_PASSWORD"),
-                    decoration: const InputDecoration(
-                      labelText: 'Mật khẩu mới',
-                      hintText: '',
-                      border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 16.0),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    //  check here: https://stackoverflow.com/questions/53869078/how-to-move-bottomsheet-along-with-keyboard-which-has-textfieldautofocused-is-t
-                    onChanged: (value) => setState(() {
-                      retypeNewPassword = value;
-                    }),
-                    key: const Key("VALID_RESET_PASSWORD"),
-                    decoration: const InputDecoration(
-                      labelText: 'Xác nhận lại',
-                      hintText: '',
-                      border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                    ),
-                  ),
-                ),
+                    padding: const EdgeInsets.all(8.0),
+                    child: PasswordTextField(
+                      key: const Key("RETYPE_NEW_PASSWORD_RESET_PASSWORD"),
+                      hintText: "Xác nhận mật khẩu",
+                      labelText: "Xác nhận mật khẩu",
+                      onChanged: (value) => setState(() {
+                        retypeNewPassword = value;
+                      }),
+                    )),
                 const SizedBox(height: 16.0),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
                     child: const Text('Hoàn thành'),
-                    onPressed: () {
+                    onPressed: () async {
+                      try {
+                        if (newPassword != retypeNewPassword) {
+                          throw Exception("Password not match");
+                        }
+                        await otp_service.resetPassword(
+                            accessToken, newPassword);
+
+                        // Show success message
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đổi mật khẩu thành công!'),
+                            ),
+                          );
+                          // sleep 2 s to close bottom sheet
+                        }
+                        await Future.delayed(const Duration(seconds: 2));
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                          ),
+                        );
+                      }
                       // Handle resetting password here
-                      Navigator.pop(context);
                     },
                   ),
                 ),

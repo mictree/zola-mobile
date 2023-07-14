@@ -20,20 +20,48 @@ Future<void> requestOtpResetPassword(String email) async {
   }
 }
 
-Future<void> verifyOtp(String email) async {
-  final response = await http.post(Uri.parse("$api/otp/verify"), headers: {
-    "Content-Type": "application/json",
-    "Accept": "*/*",
-  }, body: {
-    "email": email
-  });
+Future<String> verifyOtp(String email, String otp) async {
+  try {
+    final body = jsonEncode({"email": email, "otp": otp});
+    final response = await http.post(Uri.parse("$api/otp/verify"),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "*/*",
+        },
+        body: body);
 
-  if (response.statusCode == 200) {
-    // If the server did return a successful response, parse the JSON.
-    print("User info load");
-  } else {
-    // If the server did not return a successful response, throw an error.
-    throw Exception('Failed to load data');
+    if (response.statusCode == 200) {
+      // If the server did return a successful response, parse the JSON.
+      print("User info load");
+      return jsonDecode(response.body)["accessToken"];
+    } else {
+      // If the server did not return a successful response, throw an error.
+      throw Exception('Failed to load data');
+    }
+  } catch (e) {
+	throw Exception(e);
+  }
+}
+
+Future<void> resetPassword(String accessToken, String password) async {
+  try {
+    final body = jsonEncode({"accessToken": accessToken, "password": password});
+    final response = await http.post(Uri.parse("$api/auth/reset-password"),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "*/*",
+        },
+        body: body);
+
+    if (response.statusCode == 200) {
+      // If the server did return a successful response, parse the JSON.
+      print("User info load");
+    } else {
+      // If the server did not return a successful response, throw an error.
+      throw Exception('Failed to load data');
+    }
+  } catch (e) {
+    throw Exception('Request failed');
   }
 }
 

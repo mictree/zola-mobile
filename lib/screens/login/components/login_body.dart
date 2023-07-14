@@ -123,8 +123,7 @@ class _LoginBodyScreenState extends State<LoginBodyScreen> {
                                         validateEmail(emailController.text);
                                       },
                                       controller: emailController,
-                                      hintText: "hello@gmail.com",
-                                      obscureText: false,
+                                      hintText: "example@mail    .com",
                                       prefixIcon:
                                           const Icon(Icons.mail_outline),
                                     ),
@@ -155,7 +154,7 @@ class _LoginBodyScreenState extends State<LoginBodyScreen> {
                                     MyTextField(
                                       controller: passwordController,
                                       hintText: "**************",
-                                      obscureText: true,
+                                      isPassword: true,
                                       prefixIcon:
                                           const Icon(Icons.lock_outline),
                                     ),
